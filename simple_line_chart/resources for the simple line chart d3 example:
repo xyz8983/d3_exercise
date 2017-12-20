@@ -1,0 +1,4 @@
+resources for the simple line chart d3 example:
+
+1. svg group elements, transform https://www.dashingd3js.com/svg-group-element-and-d3js
+2. one type of transformation available in d3: transformation matrix(a,b,c,d,e)  
