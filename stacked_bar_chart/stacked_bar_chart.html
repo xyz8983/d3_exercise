@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stacked Bar Chart</title>
+
+    <style>
+        .axis .domain {
+            display:none;
+        }
+    </style>
+</head>
+
+<body>
+    <svg width = "960" height="500"></svg>
+    <script src = "https://d3js.org/d3.v4.min.js"></script>
+    <script>
+        var svg = d3.select("svg"),
+            margin = {top:20, right: 20, bottom: 30, left: 40},
+            width = +svg.attr("width") - margin.left - margin.right,
+            height = +svg.attr("height") - margin.top - margin.bottom,
+            g = svg.append("g").attr("transform", "translate("+ margin.left + ", "+margin.top +")");
+
+        var x= d3.scaleBand()
+            .rangeRound([0, width])
+            .paddingInner(0.05)
+            .align(0.1);   //no idea why align
+
+        var y = d3.scaleLinear()
+            .rangeRound([height, 0]);
+
+        var z = d3.scaleOrdinal()   //for color legend
+            .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
+
+        d3.csv("data.csv", function(d, i, columns){
+//            console.log(i);        // i is the row number, start from 0
+//            console.log(columns)   // columns is a list of column name
+            for (i=1, t=0; i<columns.length; ++i){   //i=1, numeric not include state
+                t += d[columns[i]] = +d[columns[i]];  //calculate the accumulative value for each row or each state
+            }
+            d.total = t;
+            return d;
+        }, function(error, data){
+            if (error) throw error;
+
+            var keys = data.columns.slice(1);   // first one is state, abandon
+            data.sort(function(a,b){return b.total-a.total; });   //sort whole dataframe, descending
+            x.domain(data.map(function(d){ return d.State;}));  //return a list of all the states value
+//            console.log('hey', data.map(function(d){ return d.State;}));
+            y.domain([0, d3.max(data, function(d){ return d.total;})]).nice();  //start and end on nice round values
+            z.domain(keys);
+
+            g.append("g")
+                .selectAll("g")
+                .data(d3.stack().keys(keys)(data))  //stack() is a function, keys() setting the 'stacks' on each stacked bar
+                .enter().append("g")     //data above is the whole data frame
+                 .attr("fill", function(d){ return z(d.key);})  //for filling color in each stack bar
+                .selectAll("rect")  //under each filled g create many rect
+                .data(function(d){ console.log(d); return d;})
+                .enter().append("rect")  // for drawing each stacked bar as rect
+                    .attr("x", function(d){ return x(d.data.State);})  //print out d, see d has key 'data'
+                    .attr("y", function(d){ return y(d[1]);})   //why 1=> print the d out and see
+                    .attr("height", function(d){ return y(d[0]) - y(d[1]);} )  //what 0, 1 stands for=>index
+                    .attr("width", x.bandwidth());
+            g.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0, "+ height + ")")
+                .call(d3.axisBottom(x));
+
+            g.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(y).ticks(null, 's'))  //setting ticks format
+            .append("text")
+                .attr("x", 2)
+                .attr("y", y(y.ticks().pop())+0.5)   //pop out the last tick's position, + 0.5 for adjustment
+                .attr("dy", "0.32em")
+                .attr("fill", "#000")
+                .attr("font-weight", "bold")
+                .attr("text-anchor", "start")
+                .text("Population");
+
+            var legend = g.append("g")
+                .attr("font-family", "sans-serif")
+                .attr("font-size", 10)
+                .attr("text-anchor", "end")
+             .selectAll("g")
+             .data(keys.slice().reverse())
+             .enter().append("g")  //d is now the keys
+                .attr("transform", function(d, i){ return "translate(0, "+ i*20+ ")"});  //position of legend
+
+            legend.append("rect")
+                .attr("x", width-19)
+                .attr("width", 19)
+                .attr("height", 19)
+                .attr("fill", z);
+            legend.append("text")
+                .attr("x", width-24)
+                .attr("y", 10)
+                .attr("dy", "0.32em")
+                .text(function(d){return d;});
+
+
+        });
+
+    </script>
+
+
+
+</body>
+</html>
