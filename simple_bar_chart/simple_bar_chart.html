@@ -33,7 +33,7 @@
 
         d3.tsv("data.tsv", function(d){
             d.frequency = +d.frequency;
-            return d
+            return d;
         }, function(error, data){
             if (error) throw error;
 

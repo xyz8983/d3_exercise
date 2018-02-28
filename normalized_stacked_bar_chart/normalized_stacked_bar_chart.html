@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Normalized Stacked Bar Chart</title>
+    <style>
+        .bar{
+            fill: steelblue;
+        }
+        .axis path{
+            display: none;
+        }
+    </style>
+
+
+</head>
+<body>
+    <svg width="960" height = "500"> </svg>
+    <script src="//d3js.org/d3.v4.min.js"></script>
+    <script>
+        var svg = d3.select("svg"),
+            margin = {top: 20, right: 60, bottom: 30, left: 40},
+            width = +svg.attr("width") - margin.left - margin.right,
+            height = +svg.attr("height") - margin.top - margin.bottom,
+            g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        var x = d3.scaleBand()
+            .rangeRound([0, width])
+            .padding(0.1)
+            .align(0.1);   // distance between the actual graph and the y axis
+
+        var y = d3.scaleLinear()
+            .rangeRound([height, 0]);
+
+        var z = d3.scaleOrdinal()
+            .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
+
+        var stack = d3.stack()
+            .offset(d3.stackOffsetExpand);  //normalized to 1, becoming normalized stacked bar
+
+        d3.csv("data.csv", function(d, i, columns){
+            for (i=1, t=0; i< columns.length; ++i) t+= d[columns[i]] = +d[columns[i]];
+            d.total = t;   //every data record, adding a new column called 'total'
+            return d;     //remember to return d
+        }, function(error, data){
+            if (error) throw error;
+            //console.log(data);   // data here is the whole data frame from data.csv
+
+            data.sort(function(a,b){ return b[data.columns[1]]/b.total - a[data.columns[1]]/a.total;});
+            x.domain(data.map(function(d){return d.State; }));  //every row -> use d
+            z.domain(data.columns.slice(1));
+
+            var serie = g.selectAll(".serie")
+                .data(stack.keys(data.columns.slice(1))(data))  //stack.keys()(data) -> transformed the data
+                .enter().append("g")
+                .attr("class", "serie")
+                .attr("fill", function(d){ return z(d.key);});  //every color corresponds to one serie
+                                        //d above: [51 array, key:xx, index:xx]
+            //console.log(data);  // data here is still the whole data frame from data.csv
+
+            //the data for each the serie is [51 array, key:xx, index:xx], there are seven series, loop each of the 51 array
+            serie.selectAll("rect")
+                .data(function(d) {return d; })
+                .enter().append("rect")
+                    .attr("x", function(d){ return x(d.data.State);})   // d here is each of the 51 array
+                    .attr("y", function(d){ return y(d[1]);})  //start point of y, because the reverse order, here using d[1], instead of d[0]
+                    .attr("height", function(d){ return y(d[0])-y(d[1]);})
+                    .attr("width", x.bandwidth());
+
+            g.append("g")
+                .attr("class", "axis axis--x")
+                .attr("transform", "translate(0," + height +")")
+                .call(d3.axisBottom(x));
+
+            g.append("g")
+                .attr("class", "axis axis--y")
+                .call(d3.axisLeft(y).ticks(10, "%"));
+
+            var legend = serie.append("g")   //parallel with all the series
+                .attr("class", "legend")
+                .attr("transform", function(d){ var d = d[d.length - 1]; console.log(d); return "translate("+(x(d.data.State)+ x.bandwidth()) + "," + ( ( y(d[0]) + y(d[1]))/2) + ")";});
+                                            // d here is the [51 array, key, index], d.length = 51, d.key, d.index,
+            legend.append("line")
+                .attr("x1", -6)
+                .attr("x2", 6)
+                .attr("stroke", "#000");
+
+            legend.append("text")
+                .attr("x", 9)
+                .attr("dy", "0.35em")
+                .attr("fill", "#000")
+                .style("font", "10px sans-serif")
+                .text(function(d){console.log(d); return d.key;});  //what is the d here->[51 array, key, index]
+
+        });
+
+
+    </script>
+
+
+
+
+
+
+</body>
+</html>
