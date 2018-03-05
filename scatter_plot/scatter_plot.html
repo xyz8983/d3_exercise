@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Scatter Plot</title>
+    <style>
+        body{
+            font: 10px sans-serif;
+        }
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+        .dot{
+            stroke: #000;
+        }
+    </style>
+</head>
+<body>
+    <svg width="960" height="500"></svg>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script>
+        var svg = d3.select("svg"),
+            margin = {top: 20, right: 20, bottom: 30, left:40},
+            width = svg.attr("width") - margin.left - margin.right,
+            height = svg.attr("height") - margin.top - margin.bottom,
+            g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        var x = d3.scaleLinear().range([0, width]);
+        var y = d3.scaleLinear().range([height, 0]);
+        var color = d3.scaleOrdinal(d3['schemeCategory10']);
+
+        d3.tsv("data.tsv", function(d, i, columns){
+            for (i=0; i< columns.length-1; ++i) d[columns[i]] = +d[columns[i]];
+            return d;
+        }, function(error, data){
+            if (error) throw data;
+
+            //set axis from 0
+            //x.domain([0, d3.max(data, function(d){ return d.sepalWidth})]).nice();
+            //y.domain([0, d3.max(data, function(d){ return d.sepalLength})]).nice();
+
+            x.domain(d3.extent(data, function(d){ return d.sepalWidth})).nice();
+            y.domain(d3.extent(data, function(d){ return d.sepalLength})).nice();
+            g.selectAll(".dot")
+                .data(data)
+                .enter().append("circle")
+                .attr("class", "dot")
+                .attr("r", 3.5)
+                .attr("cx", function(d){ return x(d.sepalWidth); })
+                .attr("cy", function(d){ return y(d.sepalLength); })
+                .style("fill", function(d){ return color(d.species);});
+
+            g.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0, "+ height +")")
+                .call(d3.axisBottom(x))
+                .append("text")
+                .attr("class", "label")
+                .attr("x", width)
+                .attr("y", -6)
+                .attr("fill", "#000")
+                .attr("text-anchor", "end")
+                .text("Sepal Width (cm)")
+
+            g.append("g")
+                .attr("class", "y axis")
+                .call(d3.axisLeft(y))
+                .append("text")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 6)
+                .attr("dy", "0.71em")
+                .attr("fill", "#000")
+                .attr("text-anchor", "end")
+                .text("Sepal Length (cm) ");
+
+            console.log('hey', color.domain());   //-> color of scaleOrdinal will put all the input values to this function as the domain, no need to explicitly set it
+            var legend = g.selectAll(".legend")
+                .data(color.domain())
+                .enter().append("g")
+                .attr("class", "legend")
+                .attr("transform", function(d,i ){ return "translate(0, "+ i*20+ ")";});
+
+            legend.append("rect")
+                .attr("x", width - 18)
+                .attr('width', 18)
+                .attr('height', 18)
+                .style("fill", color)  //the value for "fill" is the name of the function for assigning color, here is 'color'
+
+            legend.append("text")
+                .attr("x", width-24)
+                .attr("y", 9)
+                .attr("dy", ".35em")
+                .style("text-anchor", "end")
+                .text(function(d){ return d;});  //the text is from the data appended to legend
+
+
+
+        });
+
+
+
+    </script>
+
+</body>
+</html>
