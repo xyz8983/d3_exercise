@@ -20,12 +20,13 @@
             height = +svg.attr("height") - margin.top - margin.bottom,
             g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+        //test difference between paddinginner and padding
         var x0 = d3.scaleBand()
             .rangeRound([0, width])
-            .paddingInner(0.1);  //test difference between paddinginner and padding
+            .paddingInner(0.3);  //%value, larger the value, more space between different large group
 
         var x1 = d3.scaleBand()
-            .padding(0.05);
+            .padding(0.4);   //%value, larger the value, more space between the inner group bars
 
         var y = d3.scaleLinear()
             .rangeRound([height, 0]);
@@ -38,11 +39,13 @@
             for (var i=1, n=columns.length; i<n; ++i) d[columns[i]] = +d[columns[i]];  //why every time see +d[xx] everywhere, change type or just make sure it is positive number
             return d;
         }, function(error, data){
+            console.log('hey', data);
             if (error) throw error;
 
             var keys = data.columns.slice(1);
+            console.log('keys', keys);
             x0.domain(data.map(function(d){ return d.State; }));
-            x1.domain(keys).rangeRound([0, x0.bandwidth()]);  //later on using transform?
+            x1.domain(keys).rangeRound([0, x0.bandwidth()]);  //mapping strings words to the pixel using rangeround
             y.domain([0, d3.max(data, function(d){ return d3.max(keys, function(key){ return d[key];});})]).nice();
 
             g.append("g")
@@ -54,7 +57,7 @@
                 .data(function(d){ return keys.map(function(key) {return {key: key, value: d[key]}; }); }) //processed into {key, value }
                 .enter().append("rect")
                 .attr("x", function(d){return x1(d.key);})
-                .attr("y", function(d){ console.log(y(d.value)); return y(d.value);})     //d is from the above processed dict
+                .attr("y", function(d){ return y(d.value);})     //d is from the above processed dict
                 .attr("width", x1.bandwidth())
                 .attr("height", function(d){ return height - y(d.value);})
                 .attr("fill", function(d){ return z(d.key);});
